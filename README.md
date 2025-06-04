@@ -1,77 +1,217 @@
-# Errly
+# Errly - Error Tracking Platform
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A modern error tracking and monitoring platform built with Next.js and Go.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+## 🏗️ Architecture
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-
-## Finish your CI setup
-
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/ePahYQi5XH)
-
-
-## Run tasks
-
-To run tasks with Nx use:
-
-```sh
-npx nx <target> <project-name>
+```
+┌─────────────────────┬─────────────────────┬─────────────────────┐
+│    Next.js Web UI   │    Go API Server    │     Databases       │
+│                     │                     │                     │
+│ • Server Components │ • SDK Endpoints     │ • PostgreSQL        │
+│ • Direct DB Access  │ • Event Ingestion   │ • ClickHouse        │
+│ • Admin Interface   │ • Authentication    │ • Redis             │
+│ • Dashboard         │ • Rate Limiting     │                     │
+│ • User Management   │ • Public API        │                     │
+└─────────────────────┴─────────────────────┴─────────────────────┘
 ```
 
-For example:
+## 🚀 Quick Start
 
-```sh
-npx nx build myproject
+### Prerequisites
+
+- Docker & Docker Compose
+- Node.js 18+ (for development)
+- Go 1.21+ (for development)
+
+### 1. Start Full Stack
+
+```bash
+# Start all services with Docker Compose
+./scripts/start-full-stack.sh
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+This will start:
+- **PostgreSQL** (port 5432) - Users, projects, API keys
+- **ClickHouse** (port 8123) - Events, issues, analytics
+- **Redis** (port 6379) - Rate limiting, caching
+- **Go API Server** (port 8080) - SDK endpoints
+- **Next.js Web UI** (port 3000) - Admin interface
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### 2. Development Setup
 
-## Add new projects
+```bash
+# Setup development environment (migrations + types)
+npm run dev:setup
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
+# Or step by step:
+npm run dev:check          # Check dependencies and connections
+npm run dev:migrate        # Run database migrations
+npm run dev:types          # Generate TypeScript and Go types
 ```
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+### 3. Access the Platform
 
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
+- **Web Interface**: http://localhost:3000
+- **API Server**: http://localhost:8080
+- **API Health**: http://localhost:8080/health
 
-# Generate a library
-npx nx g @nx/react:lib some-lib
+## 🗄️ Database Management
+
+This project uses **Goose** for database migrations with automatic type generation:
+
+### Quick Commands
+```bash
+# Full development setup
+npm run dev:setup
+
+# Migration management
+npm run dev:migrate         # Apply all pending migrations
+npm run dev:status          # Show migration status
+npm run dev:types           # Generate types for TypeScript and Go
+
+# Create new migrations
+npm run db:create:postgres add_feature
+npm run db:create:clickhouse add_analytics
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Type Generation
+- **TypeScript**: Prisma generates type-safe client for Next.js
+- **Go**: sqlc generates type-safe queries for Go API
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+📚 **[Full Migration Documentation](docs/MIGRATIONS.md)**
 
+## 🧪 Testing & Quality Assurance
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+This project includes a comprehensive **Go CLI testing system** for migration safety and system reliability:
 
-## Install Nx Console
+### Quick Testing Commands
+```bash
+# Build the test runner
+make build
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+# Basic system verification
+npm run test:verify
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Volume testing (performance with large datasets)
+npm run test:volume:small      # 100K records
+npm run test:volume:medium     # 1M records
+npm run test:volume:large      # 10M records
 
-## Useful links
+# Chaos engineering (failure resilience)
+npm run test:chaos:all         # All chaos tests
+npm run test:chaos:interruption # Migration interruption recovery
 
-Learn more:
+# Complete test suites
+npm run test:suite:basic       # Basic safety tests
+npm run test:suite:production-ready # Full production-ready suite
+```
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Advanced Testing
+```bash
+# Direct CLI usage with custom options
+./build/test-runner volume --size small --verbose
+./build/test-runner chaos --type interruption --verbose
+./build/test-runner verify --generate-types
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Cross-platform builds
+make build-all                 # Build for all platforms
+```
+
+### Testing Features
+- **Volume Testing**: Performance testing with realistic datasets
+- **Chaos Engineering**: Failure simulation and recovery testing
+- **Schema Verification**: Database synchronization checks
+- **Type Generation**: Automated TypeScript/Go type updates
+- **CI/CD Integration**: GitHub Actions automation
+
+🔧 **[Go CLI Testing Documentation](docs/GO_CLI_TESTING.md)**
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **React 19** - UI library with server components
+- **Mantine UI** - Component library
+- **Effect-TS** - Functional programming and error handling
+- **TypeScript** - Type safety
+
+### Backend
+- **Go 1.21+** - API server and SDK
+- **PostgreSQL** - Primary database for users, projects, API keys
+- **ClickHouse** - Analytics database for events and issues
+- **Redis** - Caching and rate limiting
+
+### DevOps & Tools
+- **Docker & Docker Compose** - Containerization
+- **Goose** - Database migrations
+- **Prisma** - TypeScript ORM
+- **sqlc** - Go type-safe SQL
+- **pnpm** - Package manager
+- **Nx** - Monorepo tooling
+
+## 📁 Project Structure
+
+```
+errly/
+├── web/                    # Next.js frontend application
+│   ├── src/
+│   │   ├── app/           # App Router pages and API routes
+│   │   ├── components/    # Shared React components
+│   │   ├── lib/           # Utilities and configurations
+│   │   └── modules/       # Feature modules (profile, etc.)
+│   └── Dockerfile
+├── server/                 # Go API server
+│   ├── cmd/               # Application entrypoints
+│   ├── internal/          # Private application code
+│   │   ├── handlers/      # HTTP handlers
+│   │   ├── services/      # Business logic
+│   │   └── models/        # Data models
+│   └── Dockerfile
+├── migrations/             # Database migrations
+│   ├── postgres/          # PostgreSQL migrations
+│   └── clickhouse/        # ClickHouse migrations
+├── internal/testing/       # Go CLI testing system
+├── scripts/               # Development scripts
+└── docs/                  # Documentation
+```
+
+## 🔧 Environment Configuration
+
+1. Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+2. Configure your environment variables:
+```bash
+# Database passwords (required)
+DB_PASSWORD=your_secure_password
+CLICKHOUSE_PASSWORD=your_secure_password
+
+# Authentication secrets (required)
+JWT_SECRET=your_jwt_secret
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# Optional: OAuth providers
+AUTH_GOOGLE_ID=your_google_client_id
+AUTH_GOOGLE_SECRET=your_google_client_secret
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- 📖 [Documentation](docs/)
+- 🐛 [Issue Tracker](https://github.com/your-username/errly/issues)
+- 💬 [Discussions](https://github.com/your-username/errly/discussions)

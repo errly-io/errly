@@ -1,0 +1,25 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "server/internal/database/queries"
+    schema: "migrations/postgres"
+    gen:
+      go:
+        package: "database"
+        out: "server/internal/database/generated"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_db_tags: true
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: true
+        emit_empty_slices: true
+        overrides:
+          - column: "*.id"
+            go_type: "github.com/google/uuid.UUID"
+          - column: "*.space_id"
+            go_type: "github.com/google/uuid.UUID"
+          - column: "*.project_id"
+            go_type: "github.com/google/uuid.UUID"
+          - column: "*.user_id"
+            go_type: "github.com/google/uuid.UUID"

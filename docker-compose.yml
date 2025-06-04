@@ -1,0 +1,151 @@
+services:
+  # PostgreSQL - Users, Projects, API Keys
+  postgres:
+    image: postgres:15-alpine
+    container_name: errly-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-errly}
+      POSTGRES_USER: ${DB_USER:-errly}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password is required}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U errly -d errly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ClickHouse - Events, Issues, Analytics
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: errly-clickhouse
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-errly_events}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-errly}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?ClickHouse password is required}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Rate Limiting, Caching
+  redis:
+    image: redis:7-alpine
+    container_name: errly-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go API Server - SDK Endpoints
+  api-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: errly-api
+    environment:
+      # Server
+      PORT: 8080
+      HOST: 0.0.0.0
+      ENVIRONMENT: development
+
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-errly}
+      DB_PASSWORD: ${DB_PASSWORD:?Database password is required}
+      DB_NAME: ${DB_NAME:-errly}
+      DB_SSL_MODE: disable
+
+      # ClickHouse
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 9000
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-errly}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?ClickHouse password is required}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-errly_events}
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Rate Limits
+      INGEST_RPM: 1000
+      API_RPM_PER_KEY: 100
+      BURST_SIZE: 50
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Web UI - Admin Interface
+  web-ui:
+    build:
+      context: .
+      dockerfile: ./web/Dockerfile
+    container_name: errly-web
+    environment:
+      # Database connections (direct access)
+      DATABASE_URL: postgresql://${DB_USER:-errly}:${DB_PASSWORD:?Database password is required}@postgres:5432/${DB_NAME:-errly}
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-errly}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?ClickHouse password is required}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-errly_events}
+      REDIS_URL: redis://redis:6379
+
+      # API Server URL (for SDK examples)
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+
+      # Auth
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NextAuth secret is required}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      api-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  redis_data:
+
+networks:
+  default:
+    name: errly-network

@@ -1,0 +1,316 @@
+name: Production-Ready Migration Tests
+
+on:
+  pull_request:
+    paths:
+      - 'migrations/**'
+      - 'prisma/**'
+      - 'sqlc.yaml'
+      - 'scripts/test-*.sh'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'migrations/**'
+      - 'prisma/**'
+      - 'sqlc.yaml'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: true
+        default: 'basic'
+        type: choice
+        options:
+        - basic
+        - volume
+        - chaos
+        - production-ready
+
+jobs:
+  basic-tests:
+    name: Basic Migration Safety Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'basic' || github.event.inputs.test_level == 'production-ready' || github.event_name != 'workflow_dispatch'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: errly
+          POSTGRES_PASSWORD: errly_dev_password
+          POSTGRES_DB: errly
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      clickhouse:
+        image: clickhouse/clickhouse-server:latest
+        env:
+          CLICKHOUSE_USER: errly
+          CLICKHOUSE_PASSWORD: errly_dev_password
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+        ports:
+          - 8123:8123
+          - 9000:9000
+        options: >-
+          --health-cmd "clickhouse-client --query 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Wait for databases
+        run: |
+          # Wait for PostgreSQL
+          until pg_isready -h localhost -p 5432 -U errly; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+          # Wait for ClickHouse
+          until curl -s http://localhost:8123/ping; do
+            echo "Waiting for ClickHouse..."
+            sleep 2
+          done
+
+      - name: Setup ClickHouse user
+        run: |
+          # Create user and grant permissions
+          curl -X POST 'http://localhost:8123/' \
+            --data "CREATE USER IF NOT EXISTS errly IDENTIFIED BY 'errly_dev_password'"
+          curl -X POST 'http://localhost:8123/' \
+            --data "GRANT ALL ON *.* TO errly"
+
+      - name: Run migration safety tests
+        run: npm run test:migrations
+        env:
+          DATABASE_URL: postgresql://errly:errly_dev_password@localhost:5432/errly
+
+      - name: Run critical scenario tests
+        run: npm run test:critical
+        env:
+          DATABASE_URL: postgresql://errly:errly_dev_password@localhost:5432/errly
+
+      - name: Verify schema synchronization
+        run: npm run dev:verify
+        env:
+          DATABASE_URL: postgresql://errly:errly_dev_password@localhost:5432/errly
+
+      - name: Test type generation
+        run: |
+          npm run dev:types
+          # Verify generated files exist
+          test -f generated/prisma/index.js
+          test -f server/internal/database/generated/models.go
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 🛡️ Migration Safety Tests Results
+
+            ✅ **All migration safety tests passed!**
+
+            ### Tests Completed:
+            - ✅ Forward migration testing
+            - ✅ Rollback safety testing
+            - ✅ Data integrity verification
+            - ✅ Critical scenario testing
+            - ✅ Schema synchronization check
+            - ✅ Type generation verification
+
+            ### Databases Tested:
+            - ✅ PostgreSQL migrations
+            - ✅ ClickHouse migrations
+
+            Your migrations are safe for production deployment! 🚀`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  volume-tests:
+    name: Volume Testing
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'volume' || github.event.inputs.test_level == 'production-ready'
+    needs: basic-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: errly
+          POSTGRES_PASSWORD: errly_dev_password
+          POSTGRES_DB: errly
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      clickhouse:
+        image: clickhouse/clickhouse-server:latest
+        env:
+          CLICKHOUSE_USER: errly
+          CLICKHOUSE_PASSWORD: errly_dev_password
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+        ports:
+          - 8123:8123
+          - 9000:9000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install tools
+        run: |
+          go install github.com/pressly/goose/v3/cmd/goose@latest
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Setup databases
+        run: |
+          until pg_isready -h localhost -p 5432 -U errly; do sleep 2; done
+          until curl -s http://localhost:8123/ping; do sleep 2; done
+          curl -X POST 'http://localhost:8123/' --data "CREATE USER IF NOT EXISTS errly IDENTIFIED BY 'errly_dev_password'"
+          curl -X POST 'http://localhost:8123/' --data "GRANT ALL ON *.* TO errly"
+
+      - name: Run volume tests
+        run: npm run test:volume:small
+        env:
+          DATABASE_URL: postgresql://errly:errly_dev_password@localhost:5432/errly
+
+  chaos-tests:
+    name: Chaos Engineering Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_level == 'chaos' || github.event.inputs.test_level == 'production-ready'
+    needs: basic-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: errly
+          POSTGRES_PASSWORD: errly_dev_password
+          POSTGRES_DB: errly
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install tools
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Setup database
+        run: until pg_isready -h localhost -p 5432 -U errly; do sleep 2; done
+
+      - name: Run chaos tests
+        run: npm run test:chaos:all
+        env:
+          DATABASE_URL: postgresql://errly:errly_dev_password@localhost:5432/errly
+
+  security-check:
+    name: Security & Performance Check
+    runs-on: ubuntu-latest
+    needs: basic-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for dangerous operations
+        run: |
+          # Check for potentially dangerous SQL operations
+          if grep -r "DROP TABLE\|TRUNCATE\|DELETE FROM.*WHERE.*1=1" migrations/; then
+            echo "⚠️ Dangerous SQL operations detected in migrations!"
+            echo "Please review these operations carefully."
+            exit 1
+          fi
+
+          # Check for missing rollback operations
+          for file in migrations/postgres/*.sql; do
+            if ! grep -q "-- +goose Down" "$file"; then
+              echo "❌ Missing rollback section in $file"
+              exit 1
+            fi
+          done
+
+          echo "✅ Security checks passed"
+
+      - name: Performance impact analysis
+        run: |
+          # Check for potentially slow operations
+          if grep -r "ALTER TABLE.*ADD COLUMN.*NOT NULL\|CREATE INDEX.*ON.*(" migrations/; then
+            echo "⚠️ Potentially slow operations detected:"
+            grep -r "ALTER TABLE.*ADD COLUMN.*NOT NULL\|CREATE INDEX.*ON.*(" migrations/ || true
+            echo "Consider running these during maintenance windows."
+          fi
+
+          echo "✅ Performance analysis completed"

@@ -1,0 +1,61 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - internal/database/generated
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: server
+
+linters:
+  enable:
+    # Basic linters that don't require type checking
+    - gofmt
+    - goimports
+    - govet
+    - ineffassign
+    - misspell
+    - errcheck
+    - gosec
+    - staticcheck
+    - unused
+    - goconst
+    - gocyclo
+    - revive
+    - stylecheck
+    - prealloc
+    - bodyclose
+    - exportloopref
+    - gocritic
+    - rowserrcheck
+    - sqlclosecheck
+    - nilerr
+    - lll
+    - dupl
+    - whitespace
+
+  disable:
+    - typecheck # Disable typecheck to avoid module resolution issues
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - lll
+        - goconst
+        - gocritic
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error
