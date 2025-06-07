@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Avatar,
   Button,
@@ -14,7 +14,7 @@ import {
   LoadingOverlay
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconCamera, IconTrash, IconUpload, IconCheck, IconX } from '@tabler/icons-react';
+import { IconCamera, IconTrash, IconUpload } from '@tabler/icons-react';
 import { Effect, pipe } from 'effect';
 import { ProfileService, ProfileModuleLayer } from '@/modules/profile/di';
 import { ProfileResponse } from '@/modules/profile/application/dto/ProfileResponse';
@@ -36,7 +36,7 @@ export function ProfileAvatar({
   const [loading, setLoading] = useState(false);
   const [uploadModalOpened, { open: openUploadModal, close: closeUploadModal }] = useDisclosure(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const getInitials = (name: string) => {
     return name

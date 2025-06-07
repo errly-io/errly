@@ -9,9 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"server/internal/errors"
 	"server/internal/models"
 	"server/internal/repository"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AuthMiddleware handles API key authentication
@@ -34,10 +36,8 @@ func (m *AuthMiddleware) RequireAPIKey(requiredScopes ...models.APIKeyScope) gin
 		// Extract API key from Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Missing Authorization header",
-				"code":  "MISSING_AUTH_HEADER",
-			})
+			authErr := errors.NewAuthenticationError("api_key_validation", "Missing Authorization header")
+			c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 			c.Abort()
 			return
 		}
@@ -45,20 +45,16 @@ func (m *AuthMiddleware) RequireAPIKey(requiredScopes ...models.APIKeyScope) gin
 		// Parse Bearer token
 		apiKey := strings.TrimPrefix(authHeader, "Bearer ")
 		if apiKey == authHeader {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid Authorization header format. Expected: Bearer <api_key>",
-				"code":  "INVALID_AUTH_FORMAT",
-			})
+			authErr := errors.NewAuthenticationError("api_key_validation", "Invalid Authorization header format")
+			c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 			c.Abort()
 			return
 		}
 
 		// Validate API key format
 		if !isValidAPIKeyFormat(apiKey) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid API key format",
-				"code":  "INVALID_API_KEY_FORMAT",
-			})
+			authErr := errors.NewAuthenticationError("api_key_validation", "Invalid API key format")
+			c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 			c.Abort()
 			return
 		}
@@ -72,29 +68,23 @@ func (m *AuthMiddleware) RequireAPIKey(requiredScopes ...models.APIKeyScope) gin
 
 		dbAPIKey, err := m.apiKeysRepo.GetByHash(ctx, keyHash)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to validate API key",
-				"code":  "INTERNAL_ERROR",
-			})
+			dbErr := errors.NewDatabaseError("GetByHash", err)
+			c.JSON(http.StatusInternalServerError, dbErr.ToJSON())
 			c.Abort()
 			return
 		}
 
 		if dbAPIKey == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid API key",
-				"code":  "INVALID_API_KEY",
-			})
+			authErr := errors.NewAuthenticationError("api_key_validation", "Invalid API key")
+			c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 			c.Abort()
 			return
 		}
 
 		// Check if API key is expired
 		if dbAPIKey.IsExpired() {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "API key has expired",
-				"code":  "API_KEY_EXPIRED",
-			})
+			authErr := errors.NewAuthenticationError("api_key_validation", "API key has expired")
+			c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 			c.Abort()
 			return
 		}
@@ -102,10 +92,8 @@ func (m *AuthMiddleware) RequireAPIKey(requiredScopes ...models.APIKeyScope) gin
 		// Check required scopes
 		for _, requiredScope := range requiredScopes {
 			if !dbAPIKey.HasScope(requiredScope) {
-				c.JSON(http.StatusForbidden, gin.H{
-					"error": fmt.Sprintf("API key missing required scope: %s", requiredScope),
-					"code":  "INSUFFICIENT_SCOPE",
-				})
+				authzErr := errors.NewAuthorizationError(string(requiredScope), "api_access")
+				c.JSON(http.StatusForbidden, authzErr.ToJSON())
 				c.Abort()
 				return
 			}
@@ -114,10 +102,8 @@ func (m *AuthMiddleware) RequireAPIKey(requiredScopes ...models.APIKeyScope) gin
 		// Get project information
 		project, err := m.projectsRepo.GetByID(ctx, dbAPIKey.ProjectID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to get project information",
-				"code":  "INTERNAL_ERROR",
-			})
+			dbErr := errors.NewDatabaseError("GetByID", err)
+			c.JSON(http.StatusInternalServerError, dbErr.ToJSON())
 			c.Abort()
 			return
 		}

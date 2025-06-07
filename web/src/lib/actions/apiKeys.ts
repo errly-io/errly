@@ -6,7 +6,7 @@ import { projectsRepository } from '@/lib/repositories/postgres/projects';
 import { generateApiKey } from '@/lib/utils/apiKeys';
 import { ApiKeyWithToken, CreateApiKeyRequest, ApiKeyScope } from '@/lib/types/database';
 
-export type ActionResult<T = any> = {
+export type ActionResult<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;

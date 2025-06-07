@@ -73,8 +73,13 @@ func (r *IssuesRepository) GetIssues(ctx context.Context, query *models.IssuesQu
 		whereClause = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Count total issues
-	countQuery := fmt.Sprintf("SELECT count() FROM issues %s", whereClause)
+	// Count total issues - using safe query building
+	var countQuery string
+	if whereClause != "" {
+		countQuery = "SELECT count() FROM issues " + whereClause
+	} else {
+		countQuery = "SELECT count() FROM issues"
+	}
 	row := r.db.QueryRow(ctx, countQuery, args...)
 
 	var total int

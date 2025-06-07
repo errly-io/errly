@@ -8,7 +8,7 @@ import { Project } from '@/lib/db/prisma';
 import { ProjectSettings } from '@/lib/types/database';
 import { log } from '@/lib/logging/logger';
 
-export type ActionResult<T = any> = {
+export type ActionResult<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;
@@ -120,7 +120,7 @@ export async function updateProject(
     if (settingsJson) {
       try {
         updates.settings = JSON.parse(settingsJson);
-      } catch (error) {
+      } catch (_error) {
         return {
           success: false,
           fieldErrors: { settings: 'Invalid settings format' }
@@ -181,12 +181,12 @@ export async function deleteProject(
     revalidatePath('/[space]/projects', 'page');
     revalidatePath('/[space]', 'page');
 
-    log.info('Project deleted successfully', { projectId });
+    log.info('Project deleted successfully', { projectId, spaceSlug });
     return {
       success: true
     };
   } catch (error) {
-    log.error('Error deleting project', { projectId }, error as Error);
+    log.error('Error deleting project', { projectId, spaceSlug }, error as Error);
     return {
       success: false,
       error: 'Failed to delete project. Please try again.'

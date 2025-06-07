@@ -55,7 +55,8 @@ export class PrismaSpacesRepository {
         name: data.name,
         slug: data.slug,
         description: data.description ?? null,
-        settings: data.settings ?? {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any ?? {},
       },
     });
   }
@@ -69,7 +70,10 @@ export class PrismaSpacesRepository {
       data: {
         ...data,
         updated_at: new Date(),
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
   }
 

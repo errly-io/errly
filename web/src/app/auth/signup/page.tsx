@@ -6,7 +6,7 @@ import { useForm } from '@mantine/form';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { registerUser, RegistrationData } from '../../../modules/auth';
+import { registerUser } from '../../../modules/auth';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -31,6 +31,7 @@ export default function SignUpPage() {
     try {
       setGeneralError(null);
       form.clearErrors();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registrationData } = values;
       await registerUser(registrationData);
       alert('Registration successful! Please sign in.');

@@ -1,7 +1,6 @@
-import { Effect, Context, Schedule, Logger, pipe, Layer, Schema } from "effect";
-import { User, UpdateProfileData } from "../../domain/entities/User";
-import { UserRepository, UserSession, UserActivity } from "../../domain/repositories/UserRepository";
-import { ProfileErrors, ValidationError, UnauthorizedError } from "../../domain/errors/ProfileErrors";
+import { Effect, Context, Schedule, pipe, Layer, Schema } from "effect";
+import { UserRepository } from "../../domain/repositories/UserRepository";
+import { ProfileErrors, ValidationError } from "../../domain/errors/ProfileErrors";
 import {
   UpdateProfileRequest,
   ChangePasswordRequest,

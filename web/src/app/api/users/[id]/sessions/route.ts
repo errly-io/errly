@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/db/prisma';
+import { SessionData } from '@/lib/types/api';
+import { createSecureResponse, createSecureErrorResponse } from '@/lib/security/headers';
 
 export async function GET(
   _request: NextRequest,
@@ -10,9 +11,10 @@ export async function GET(
     const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+      return createSecureErrorResponse(
+        'Authentication required',
+        401,
+        'UNAUTHORIZED'
       );
     }
 
@@ -20,9 +22,10 @@ export async function GET(
 
     // Only allow users to access their own sessions
     if (resolvedParams.id !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+      return createSecureErrorResponse(
+        'Access denied to user sessions',
+        403,
+        'FORBIDDEN'
       );
     }
 
@@ -30,7 +33,7 @@ export async function GET(
     // Note: This assumes you have a user_sessions table
     // For now, return empty array as the table structure needs to be defined
     // TODO: Implement proper user sessions table
-    const sessions: any[] = [];
+    const sessions: SessionData[] = [];
 
     // Example of what the query would look like when table exists:
     // const sessions = await prisma.userSession.findMany({
@@ -47,14 +50,16 @@ export async function GET(
     //   }
     // });
 
-    return NextResponse.json({
-      sessions
+    return createSecureResponse({
+      sessions,
+      total: sessions.length
     });
   } catch (error) {
     console.error('Error fetching sessions:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    return createSecureErrorResponse(
+      'Failed to fetch user sessions',
+      500,
+      'INTERNAL_ERROR'
     );
   }
 }

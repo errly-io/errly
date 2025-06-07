@@ -1,10 +1,12 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+type LogContext = Record<string, string | number | boolean | null | undefined>;
+
 interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: string;
-  context?: Record<string, any>;
+  context?: LogContext;
   error?: Error;
 }
 
@@ -31,7 +33,7 @@ class Logger {
     return formatted;
   }
 
-  private createLogEntry(level: LogLevel, message: string, context?: Record<string, any>, error?: Error): LogEntry {
+  private createLogEntry(level: LogLevel, message: string, context?: LogContext, error?: Error): LogEntry {
     return {
       level,
       message,
@@ -107,45 +109,95 @@ class Logger {
     }
   }
 
-  debug(message: string, context?: Record<string, any>): void {
+  debug(message: string, context?: LogContext): void {
     const entry = this.createLogEntry('debug', message, context);
     this.writeLog(entry);
   }
 
-  info(message: string, context?: Record<string, any>): void {
+  info(message: string, context?: LogContext): void {
     const entry = this.createLogEntry('info', message, context);
     this.writeLog(entry);
   }
 
-  warn(message: string, context?: Record<string, any>, error?: Error): void {
+  warn(message: string, context?: LogContext, error?: Error): void {
     const entry = this.createLogEntry('warn', message, context, error);
     this.writeLog(entry);
   }
 
-  error(message: string, context?: Record<string, any>, error?: Error): void {
+  error(message: string, context?: LogContext, error?: Error): void {
     const entry = this.createLogEntry('error', message, context, error);
     this.writeLog(entry);
   }
 
   // Convenience methods for common scenarios
-  apiError(endpoint: string, error: Error, context?: Record<string, any>): void {
-    this.error(`API Error: ${endpoint}`, { endpoint, ...context }, error);
+  apiError(endpoint: string, error: Error, context?: LogContext): void {
+    // Import here to avoid circular dependencies
+    const { createSafeError } = require('@/lib/security/error-handling');
+    const secureError = createSafeError(error, 'API_ERROR');
+
+    this.error(`API Error: ${endpoint}`, {
+      endpoint,
+      errorCode: secureError.code,
+      timestamp: secureError.timestamp,
+      ...context
+    }, error);
   }
 
-  authError(action: string, error: Error, context?: Record<string, any>): void {
-    this.error(`Auth Error: ${action}`, { action, ...context }, error);
+  authError(action: string, error: Error, context?: LogContext): void {
+    const { createSafeError } = require('@/lib/security/error-handling');
+    const secureError = createSafeError(error, 'AUTH_ERROR');
+
+    this.error(`Auth Error: ${action}`, {
+      action,
+      errorCode: secureError.code,
+      timestamp: secureError.timestamp,
+      ...context
+    }, error);
   }
 
-  validationError(field: string, value: any, reason: string): void {
-    this.warn(`Validation Error: ${field}`, { field, value, reason });
+  validationError(field: string, value: unknown, reason: string): void {
+    const { ValidationError } = require('@/lib/security/error-handling');
+    const secureError = new ValidationError(field, reason, value);
+
+    this.warn(`Validation Error: ${field}`, {
+      field,
+      reason,
+      errorCode: secureError.code,
+      timestamp: secureError.timestamp,
+      // value is intentionally excluded for security
+    });
   }
 
-  securityEvent(event: string, context?: Record<string, any>): void {
-    this.warn(`Security Event: ${event}`, context);
+  securityEvent(event: string, context?: LogContext): void {
+    // Security events should be logged with extra care
+    const sanitizedContext = this.sanitizeContext(context);
+    this.warn(`Security Event: ${event}`, {
+      event,
+      timestamp: Date.now(),
+      ...sanitizedContext
+    });
   }
 
   performanceWarning(operation: string, duration: number, threshold: number): void {
     this.warn(`Performance Warning: ${operation}`, { operation, duration, threshold });
+  }
+
+  // Helper method to sanitize context for security events
+  private sanitizeContext(context?: LogContext): LogContext {
+    if (!context) return {};
+
+    const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'credential'];
+    const sanitized: LogContext = {};
+
+    for (const [key, value] of Object.entries(context)) {
+      const isSensitive = sensitiveKeys.some(sensitive =>
+        key.toLowerCase().includes(sensitive)
+      );
+
+      sanitized[key] = isSensitive ? '[REDACTED]' : value;
+    }
+
+    return sanitized;
   }
 }
 
@@ -154,37 +206,37 @@ export const logger = new Logger();
 
 // Export convenience functions
 export const log = {
-  debug: (message: string, context?: Record<string, any>) => logger.debug(message, context),
-  info: (message: string, context?: Record<string, any>) => logger.info(message, context),
-  warn: (message: string, context?: Record<string, any>, error?: Error) => logger.warn(message, context, error),
-  error: (message: string, context?: Record<string, any>, error?: Error) => logger.error(message, context, error),
+  debug: (message: string, context?: LogContext) => logger.debug(message, context),
+  info: (message: string, context?: LogContext) => logger.info(message, context),
+  warn: (message: string, context?: LogContext, error?: Error) => logger.warn(message, context, error),
+  error: (message: string, context?: LogContext, error?: Error) => logger.error(message, context, error),
   
   // Specialized logging
   api: {
-    error: (endpoint: string, error: Error, context?: Record<string, any>) => logger.apiError(endpoint, error, context),
-    request: (method: string, endpoint: string, context?: Record<string, any>) => 
+    error: (endpoint: string, error: Error, context?: LogContext) => logger.apiError(endpoint, error, context),
+    request: (method: string, endpoint: string, context?: LogContext) =>
       logger.debug(`API Request: ${method} ${endpoint}`, context),
     response: (method: string, endpoint: string, status: number, duration?: number) =>
       logger.debug(`API Response: ${method} ${endpoint}`, { status, duration })
   },
   
   auth: {
-    error: (action: string, error: Error, context?: Record<string, any>) => logger.authError(action, error, context),
-    success: (action: string, context?: Record<string, any>) => logger.info(`Auth Success: ${action}`, context),
-    attempt: (action: string, context?: Record<string, any>) => logger.debug(`Auth Attempt: ${action}`, context)
+    error: (action: string, error: Error, context?: LogContext) => logger.authError(action, error, context),
+    success: (action: string, context?: LogContext) => logger.info(`Auth Success: ${action}`, context),
+    attempt: (action: string, context?: LogContext) => logger.debug(`Auth Attempt: ${action}`, context)
   },
-  
+
   security: {
-    event: (event: string, context?: Record<string, any>) => logger.securityEvent(event, context),
-    violation: (violation: string, context?: Record<string, any>) => 
+    event: (event: string, context?: LogContext) => logger.securityEvent(event, context),
+    violation: (violation: string, context?: LogContext) =>
       logger.error(`Security Violation: ${violation}`, context),
     rateLimitHit: (ip: string, endpoint: string) => 
       logger.securityEvent('Rate Limit Hit', { ip, endpoint })
   },
   
   validation: {
-    error: (field: string, value: any, reason: string) => logger.validationError(field, value, reason),
-    success: (fields: string[]) => logger.debug('Validation Success', { fields })
+    error: (field: string, value: unknown, reason: string) => logger.validationError(field, value, reason),
+    success: (fields: string[]) => logger.debug('Validation Success', { fields: fields.join(', ') })
   },
   
   performance: {

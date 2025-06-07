@@ -14,8 +14,7 @@ import {
   Badge,
   ActionIcon,
   Alert,
-  LoadingOverlay,
-  Divider
+  LoadingOverlay
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
@@ -25,15 +24,12 @@ import {
   IconKey,
   IconDevices,
   IconTrash,
-  IconCheck,
-  IconX,
   IconAlertCircle,
   IconLock
 } from '@tabler/icons-react';
 import { Effect, pipe } from 'effect';
 import { ProfileService, ProfileModuleLayer } from '@/modules/profile/di';
-import { ProfileResponse } from '@/modules/profile/application/dto/ProfileResponse';
-import { UserSessionResponse } from '@/modules/profile/application/dto/ProfileResponse';
+import { ProfileResponse, UserSessionResponse } from '@/modules/profile/application/dto/ProfileResponse';
 import { ChangePasswordRequest } from '@/modules/profile/application/dto/UpdateProfileRequest';
 import { RuntimeClient } from '@/modules/shared/clientRuntime';
 

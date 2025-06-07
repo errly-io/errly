@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prismaUsersRepository, prismaSpacesRepository } from '../../../lib/repositories/prisma';
-import { hashPassword, validatePasswordStrength } from '../../../lib/utils/password';
+import { prismaUsersRepository, prismaSpacesRepository } from '@/lib/repositories/prisma';
+import { hashPassword, validatePasswordStrength } from '@/lib/utils/password';
 import { z } from 'zod';
 
 const RegisterSchema = z.object({
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Password does not meet requirements',
-          details: passwordValidation.errors.map(error => ({
+          details: passwordValidation.errors.map((error: string) => ({
             field: 'password',
             message: error
           }))

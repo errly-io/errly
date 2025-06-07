@@ -1,6 +1,13 @@
 import { postgres, queryOne, queryMany } from '@/lib/db/postgres';
 import { Project } from '@/lib/types/database';
 
+interface ProjectStats {
+  total_events: number;
+  total_issues: number;
+  unresolved_issues: number;
+  affected_users: number;
+}
+
 export class ProjectsRepository {
 
   async getBySpace(spaceId: string): Promise<Project[]> {
@@ -119,7 +126,7 @@ export class ProjectsRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getProjectsWithStats(spaceId: string): Promise<(Project & { stats?: any })[]> {
+  async getProjectsWithStats(spaceId: string): Promise<(Project & { stats?: ProjectStats })[]> {
     // Get projects from PostgreSQL
     const projects = await this.getBySpace(spaceId);
 

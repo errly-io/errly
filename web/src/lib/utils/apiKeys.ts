@@ -55,18 +55,7 @@ export function getScopeDisplayName(scope: string): string {
   }
 }
 
-export function getScopeDescription(scope: string): string {
-  switch (scope) {
-    case 'ingest':
-      return 'Allow sending error events and performance data';
-    case 'read':
-      return 'Allow reading project data, issues, and events';
-    case 'admin':
-      return 'Full access to project data and settings';
-    default:
-      return 'Unknown scope';
-  }
-}
+// Note: getScopeDescription was removed as it was not used in the codebase
 
 export function getScopeColor(scope: string): string {
   switch (scope) {

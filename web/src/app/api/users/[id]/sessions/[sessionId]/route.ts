@@ -29,7 +29,7 @@ export async function DELETE(
     // 3. Optionally notify the user on that device
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

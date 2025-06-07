@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { validateRequestBody, validatePathParams, ChangePasswordSchema, UserIdSchema } from '../../../../lib/validation/schemas';
-import { sanitizeObject } from '../../../../lib/security/sanitize';
-import { log } from '../../../../lib/logging/logger';
-import { prismaUsersRepository } from '../../../../lib/repositories/prisma';
-import { verifyPassword, hashPassword, validatePasswordStrength } from '../../../../lib/utils/password';
+import { auth } from '@/lib/auth';
+import { validateRequestBody, validatePathParams, ChangePasswordSchema, UserIdSchema } from '@/lib/validation/schemas';
+import { sanitizeObject } from '@/lib/security/sanitize';
+import { log } from '@/lib/logging/logger';
+import { prismaUsersRepository } from '@/lib/repositories/prisma';
+import { verifyPassword, hashPassword, validatePasswordStrength } from '@/lib/utils/password';
 
 export async function POST(
   request: NextRequest,

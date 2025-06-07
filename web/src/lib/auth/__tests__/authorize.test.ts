@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { hashPassword } from '../../utils/password';
+import { hashPassword, validatePasswordStrength, generateSecurePassword } from '../utils/password';
 
 // Mock the repositories
 vi.mock('../../repositories/prisma', () => ({
@@ -8,13 +8,10 @@ vi.mock('../../repositories/prisma', () => ({
   },
 }));
 
-// Mock the password utility
-vi.mock('../../utils/password', () => ({
-  verifyPassword: vi.fn(),
-  hashPassword: vi.fn(),
-}));
+// Note: Using real password utilities for testing
 
 describe('NextAuth authorize function', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const mockUser = {
     id: '1',
     email: 'test@example.com',
@@ -54,7 +51,7 @@ describe('NextAuth authorize function', () => {
   });
 
   it('should hash password correctly', async () => {
-    const password = 'testpassword';
+    const password = 'test-password-123'; // Test password - not a real secret
     const hashedPassword = await hashPassword(password);
     
     expect(hashedPassword).toBeDefined();
@@ -63,7 +60,6 @@ describe('NextAuth authorize function', () => {
   });
 
   it('should validate password requirements', () => {
-    const { validatePasswordStrength } = require('../../utils/password');
     
     // Test weak password
     const weakPassword = validatePasswordStrength('123');
@@ -79,7 +75,6 @@ describe('NextAuth authorize function', () => {
 
 describe('Password utilities', () => {
   it('should generate secure password', () => {
-    const { generateSecurePassword } = require('../../utils/password');
     
     const password = generateSecurePassword(16);
     expect(password).toBeDefined();
@@ -88,7 +83,6 @@ describe('Password utilities', () => {
   });
 
   it('should validate password strength correctly', () => {
-    const { validatePasswordStrength } = require('../../utils/password');
     
     const testCases = [
       { password: '123', expected: false },

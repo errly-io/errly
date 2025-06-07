@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"server/internal/database"
 	"server/internal/models"
+
+	"github.com/google/uuid"
 )
 
 // EventsRepository handles event operations in ClickHouse
@@ -129,8 +130,13 @@ func (r *EventsRepository) GetEvents(ctx context.Context, query *models.EventsQu
 		whereClause = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Count total events
-	countQuery := fmt.Sprintf("SELECT count() FROM error_events %s", whereClause)
+	// Count total events - using safe query building
+	var countQuery string
+	if whereClause != "" {
+		countQuery = "SELECT count() FROM error_events " + whereClause
+	} else {
+		countQuery = "SELECT count() FROM error_events"
+	}
 	row := r.db.QueryRow(ctx, countQuery, args...)
 
 	var total int

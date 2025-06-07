@@ -57,7 +57,8 @@ export class PrismaUsersRepository {
         password_hash: data.password_hash ?? null,
         space_id: data.space_id,
         role: data.role ?? 'member',
-        settings: data.settings ?? {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any ?? {},
       },
       include: {
         spaces: {
@@ -80,7 +81,10 @@ export class PrismaUsersRepository {
       data: {
         ...data,
         updated_at: new Date(),
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       include: {
         spaces: {
           select: {

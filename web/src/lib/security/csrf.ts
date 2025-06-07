@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ApiContext } from '@/lib/types/api';
 
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -58,10 +59,10 @@ export async function verifyCSRFToken(request: NextRequest): Promise<boolean> {
 }
 
 // CSRF middleware
-export function withCSRFProtection(
-  handler: (request: NextRequest, context: any) => Promise<NextResponse>
+export function withCSRFProtection<T = unknown>(
+  handler: (request: NextRequest, context: ApiContext) => Promise<NextResponse<T>>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: ApiContext) => {
     if (!(await verifyCSRFToken(request))) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },

@@ -1,34 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiRateLimit, authRateLimit, uploadRateLimit } from '@/lib/security/rate-limit';
 import { verifyCSRFToken, setCSRFToken } from '@/lib/security/csrf';
+import {
+  applySecurityHeaders,
+  validateRequestHeaders,
+  logSecurityEvent,
+  createSecureErrorResponse
+} from '@/lib/security/headers';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Security headers for all requests
+  // Validate request headers first
+  const validation = validateRequestHeaders(request);
+
+  if (!validation.isValid) {
+    logSecurityEvent('invalid_headers', request, {
+      errors: validation.errors,
+    });
+
+    return createSecureErrorResponse(
+      'Invalid request headers',
+      400,
+      'INVALID_HEADERS'
+    );
+  }
+
+  // Check for suspicious patterns in URL
+  const suspiciousPatterns = [
+    /\.\./,  // Path traversal
+    /<script/i,  // XSS attempt
+    /javascript:/i,  // JavaScript protocol
+    /data:/i,  // Data protocol (in URL)
+    /vbscript:/i,  // VBScript protocol
+  ];
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(request.url)) {
+      logSecurityEvent('suspicious_url', request, {
+        pattern: pattern.toString(),
+        url: request.url,
+      });
+
+      return createSecureErrorResponse(
+        'Suspicious request detected',
+        400,
+        'SUSPICIOUS_REQUEST'
+      );
+    }
+  }
+
+  // Continue with request processing
   const response = NextResponse.next();
-
-  // Add security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-
-  // CSP header
-  const cspHeader = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Note: unsafe-inline/eval should be removed in production
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'"
-  ].join('; ');
-
-  response.headers.set('Content-Security-Policy', cspHeader);
 
   // Apply rate limiting to API routes
   if (pathname.startsWith('/api/')) {
@@ -64,10 +87,12 @@ export async function middleware(request: NextRequest) {
 
   // Set CSRF token for GET requests to API
   if (pathname.startsWith('/api/') && request.method === 'GET') {
-    return setCSRFToken(response);
+    const responseWithCSRF = setCSRFToken(response);
+    return applySecurityHeaders(responseWithCSRF);
   }
 
-  return response;
+  // Apply security headers to all responses
+  return applySecurityHeaders(response);
 }
 
 export const config = {

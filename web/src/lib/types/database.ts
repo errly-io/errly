@@ -2,6 +2,8 @@
 // NOTE: Use Prisma types for PostgreSQL entities instead of defining them here
 // Import from: '@/lib/db/prisma' or '@/lib/repositories/prisma'
 
+import { JsonValue } from './api';
+
 // Re-export Prisma types for convenience
 export type {
   Space,
@@ -87,7 +89,7 @@ export interface ErrorEvent {
   os: string | null;
   url: string | null;
   tags: Record<string, string>;
-  extra: Record<string, any>;
+  extra: Record<string, JsonValue>;
   fingerprint: string;
   level: IssueLevel;
   status: IssueStatus;

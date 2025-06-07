@@ -56,7 +56,7 @@ export function validatePasswordStrength(password: string): {
     errors.push('Password must contain at least one number');
   }
 
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
 
@@ -71,7 +71,7 @@ export function validatePasswordStrength(password: string): {
  * @param length - Password length (default: 16)
  * @returns string - Generated password
  */
-export function generateSecurePassword(length: number = 16): string {
+export function generateSecurePassword(length = 16): string {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const numbers = '0123456789';

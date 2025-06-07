@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { issuesRepository } from '@/lib/repositories/clickhouse/issues';
 import { invalidateIssuesCache } from '@/lib/data/issues';
 
-export type ActionResult<T = any> = {
+export type ActionResult<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;

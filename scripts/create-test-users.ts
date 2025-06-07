@@ -11,7 +11,7 @@ async function main() {
   console.log('Creating test users...');
   
   try {
-    const users = await createTestUsers();
+    await createTestUsers();
     
     console.log('\n✅ Test users created successfully!');
     console.log('\nYou can now login with:');

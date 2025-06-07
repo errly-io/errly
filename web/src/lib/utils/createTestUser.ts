@@ -29,6 +29,10 @@ export async function createTestUser() {
     const passwordHash = await hashPassword('password');
 
     // Create test user
+    if (!testSpace?.id) {
+      throw new Error('Failed to create test space');
+    }
+
     const testUser = await prismaUsersRepository.create({
       email: 'test@example.com',
       name: 'Test User',
@@ -40,7 +44,7 @@ export async function createTestUser() {
     console.log('Test user created successfully:', {
       email: testUser.email,
       name: testUser.name,
-      space: testSpace.name,
+      space: testSpace?.name || 'No space',
     });
 
     return testUser;
@@ -110,6 +114,10 @@ export async function createTestUsers() {
       const passwordHash = await hashPassword(userData.password);
 
       // Create user
+      if (!space?.id) {
+        throw new Error(`Failed to create space for user ${userData.email}`);
+      }
+
       const user = await prismaUsersRepository.create({
         email: userData.email,
         name: userData.name,

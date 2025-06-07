@@ -121,10 +121,10 @@ export const uploadRateLimit = createRateLimit({
 
 // Rate limit middleware wrapper
 export function withRateLimit(
-  handler: (request: NextRequest, context: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context: unknown) => Promise<NextResponse>,
   rateLimiter: (request: NextRequest) => Promise<NextResponse | null>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: unknown) => {
     const rateLimitResponse = await rateLimiter(request);
 
     if (rateLimitResponse) {

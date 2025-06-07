@@ -73,7 +73,7 @@ export type CreateSpace = {
   name: string;
   slug: string;
   description?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 };
 
 export type CreateUser = {
@@ -83,7 +83,7 @@ export type CreateUser = {
   password_hash?: string;
   space_id: string;
   role?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 };
 
 export type CreateProject = {
@@ -93,7 +93,7 @@ export type CreateProject = {
   platform: string;
   framework?: string;
   description?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 };
 
 export type CreateApiKey = {

@@ -62,7 +62,7 @@ export async function POST(
     return NextResponse.json({
       avatarUrl
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,4 +1,6 @@
 import DOMPurify from 'isomorphic-dompurify';
+import { JsonValue } from '@/lib/types/api';
+import { SECURITY_CONFIG } from './config';
 
 // HTML sanitization options
 const HTML_SANITIZE_OPTIONS = {
@@ -91,40 +93,47 @@ export function sanitizeSQLInput(input: string): string {
   return sanitized.trim();
 }
 
-// Sanitize object recursively
-export function sanitizeObject(obj: any): any {
+/**
+ * Recursively sanitizes an object, removing dangerous properties and sanitizing values
+ */
+export function sanitizeObject<T = JsonValue>(obj: T): T {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
+
   if (typeof obj === 'string') {
-    return sanitizeText(obj);
+    return sanitizeText(obj) as T;
   }
-  
+
   if (typeof obj === 'number' || typeof obj === 'boolean') {
     return obj;
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(sanitizeObject);
+    return obj.map(sanitizeObject) as T;
   }
-  
+
   if (typeof obj === 'object') {
-    const sanitized: any = {};
-    Object.keys(obj).forEach(key => {
+    const sanitized = Object.create(null) as Record<string, unknown>;
+    Object.keys(obj as Record<string, unknown>).forEach(key => {
+      // Skip dangerous properties
+      if (SECURITY_CONFIG.ERRORS.DANGEROUS_PROPERTIES.includes(key as '__proto__' | 'constructor' | 'prototype')) {
+        return;
+      }
+
       const sanitizedKey = sanitizeText(key);
       if (sanitizedKey) {
-        sanitized[sanitizedKey] = sanitizeObject(obj[key]);
+        sanitized[sanitizedKey] = sanitizeObject((obj as Record<string, unknown>)[key]);
       }
     });
-    return sanitized;
+    return sanitized as T;
   }
   
   return obj;
 }
 
 // Validate and sanitize user input based on type
-export function sanitizeUserInput(input: any, type: 'text' | 'html' | 'email' | 'url' | 'filename' = 'text'): string {
+export function sanitizeUserInput(input: unknown, type: 'text' | 'html' | 'email' | 'url' | 'filename' = 'text'): string {
   if (typeof input !== 'string') {
     return '';
   }

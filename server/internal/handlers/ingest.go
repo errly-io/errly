@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"server/internal/errors"
 	"server/internal/middleware"
 	"server/internal/models"
 	"server/internal/services"
@@ -29,50 +30,37 @@ func (h *IngestHandler) IngestEvents(c *gin.Context) {
 	// Get auth context
 	authCtx := middleware.GetAuthContext(c)
 	if authCtx == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Authentication required",
-			"code":  "AUTH_REQUIRED",
-		})
+		authErr := errors.NewAuthenticationError("ingest", "Authentication required")
+		c.JSON(http.StatusUnauthorized, authErr.ToJSON())
 		return
 	}
 
 	// Parse request body
 	var request models.IngestRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request body",
-			"code":    "INVALID_REQUEST_BODY",
-			"details": err.Error(),
-		})
+		validationErr := errors.NewValidationError("request_body", "Invalid JSON format", err.Error())
+		c.JSON(http.StatusBadRequest, validationErr.ToJSON())
 		return
 	}
 
 	// Validate events
 	if len(request.Events) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "At least one event is required",
-			"code":  "NO_EVENTS",
-		})
+		validationErr := errors.NewValidationError("events", "At least one event is required", len(request.Events))
+		c.JSON(http.StatusBadRequest, validationErr.ToJSON())
 		return
 	}
 
 	if len(request.Events) > 100 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Maximum 100 events per request",
-			"code":  "TOO_MANY_EVENTS",
-		})
+		validationErr := errors.NewValidationError("events", "Maximum 100 events per request", len(request.Events))
+		c.JSON(http.StatusBadRequest, validationErr.ToJSON())
 		return
 	}
 
 	// Validate each event
 	for i, event := range request.Events {
 		if err := h.validateEvent(&event); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":       "Invalid event",
-				"code":        "INVALID_EVENT",
-				"event_index": i,
-				"details":     err.Error(),
-			})
+			validationErr := errors.NewValidationError(fmt.Sprintf("events[%d]", i), err.Error(), event)
+			c.JSON(http.StatusBadRequest, validationErr.ToJSON())
 			return
 		}
 	}
@@ -80,10 +68,8 @@ func (h *IngestHandler) IngestEvents(c *gin.Context) {
 	// Process events
 	ctx := c.Request.Context()
 	if err := h.ingestService.ProcessEvents(ctx, authCtx.Project.ID, request.Events); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to process events",
-			"code":  "PROCESSING_ERROR",
-		})
+		processingErr := errors.NewSecureError("Failed to process events", "PROCESSING_ERROR", err, nil)
+		c.JSON(http.StatusInternalServerError, processingErr.ToJSON())
 		return
 	}
 

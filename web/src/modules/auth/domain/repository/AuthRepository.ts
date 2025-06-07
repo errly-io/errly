@@ -1,8 +1,12 @@
 import { RegistrationData } from '../../application/dto/RegistrationData';
 
-// For now AuthResponse will be any, like the result of response.json()
-// In the future, you can specify here more specific response type from registration API
-export type AuthResponse = any;
+// Auth response type - can be extended with more specific fields as needed
+export interface AuthResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+}
 
 export interface AuthRepository {
   register(data: RegistrationData): Promise<AuthResponse>;

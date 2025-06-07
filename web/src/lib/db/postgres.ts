@@ -35,7 +35,7 @@ class PostgresConnection {
     return this.pool.connect();
   }
 
-  public async query(text: string, params?: any[]) {
+  public async query(text: string, params?: unknown[]) {
     try {
       const res = await this.pool.query(text, params);
       return res;
@@ -79,7 +79,7 @@ export async function withTransaction<T>(
 // Typed query helpers
 export async function queryOne<T>(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<T | null> {
   const result = await postgres.query(text, params);
   return result.rows[0] ?? null;
@@ -87,7 +87,7 @@ export async function queryOne<T>(
 
 export async function queryMany<T>(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<T[]> {
   const result = await postgres.query(text, params);
   return result.rows;
@@ -95,7 +95,7 @@ export async function queryMany<T>(
 
 export async function queryExists(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<boolean> {
   const result = await postgres.query(text, params);
   return (result.rowCount ?? 0) > 0;

@@ -9,7 +9,7 @@ export async function GET() {
       service: 'errly-web-ui',
       version: '1.0.0',
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       {
         status: 'unhealthy',

@@ -1,6 +1,6 @@
 import { Effect, pipe, Schema } from "effect";
 import { User, UpdateProfileData, UserSchema } from "../../domain/entities/User";
-import { UserRepository, UserSession, UserActivity } from "../../domain/repositories/UserRepository";
+import { UserRepository, UserSession, UserActivity, ActivityType } from "../../domain/repositories/UserRepository";
 import {
   ProfileErrors,
   NetworkError,
@@ -67,10 +67,11 @@ export class HttpUserRepository implements UserRepository {
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map((data: unknown) => {
-        if (typeof (data as any)?.avatarUrl !== 'string') {
+        const response = data as { avatarUrl?: unknown };
+        if (typeof response?.avatarUrl !== 'string') {
           throw new Error('Invalid response: avatarUrl is not a string');
         }
-        return (data as any).avatarUrl as string;
+        return response.avatarUrl;
       })
     );
 
@@ -118,18 +119,22 @@ export class HttpUserRepository implements UserRepository {
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map((data: unknown) => {
-        if (!Array.isArray((data as any)?.sessions)) {
+        const response = data as { sessions?: unknown };
+        if (!Array.isArray(response?.sessions)) {
           throw new Error('Invalid response: sessions is not an array');
         }
-        return (data as any).sessions.map((session: any) => ({
-          id: session.id,
-          deviceInfo: session.deviceInfo,
-          ipAddress: session.ipAddress,
-          location: session.location,
-          createdAt: new Date(session.createdAt),
-          lastActiveAt: new Date(session.lastActiveAt),
-          isCurrent: session.isCurrent,
-        }));
+        return response.sessions.map((session: unknown) => {
+          const sessionData = session as Record<string, unknown>;
+          return {
+            id: sessionData.id as string,
+            deviceInfo: sessionData.deviceInfo as string,
+            ipAddress: sessionData.ipAddress as string,
+            location: sessionData.location as string,
+            createdAt: new Date(sessionData.createdAt as string),
+            lastActiveAt: new Date(sessionData.lastActiveAt as string),
+            isCurrent: sessionData.isCurrent as boolean,
+          };
+        });
       })
     );
 
@@ -165,17 +170,21 @@ export class HttpUserRepository implements UserRepository {
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map((data: unknown) => {
-        if (!Array.isArray((data as any)?.activities)) {
+        const response = data as { activities?: unknown };
+        if (!Array.isArray(response?.activities)) {
           throw new Error('Invalid response: activities is not an array');
         }
-        return (data as any).activities.map((activity: any) => ({
-          id: activity.id,
-          type: activity.type,
-          description: activity.description,
-          metadata: activity.metadata,
-          createdAt: new Date(activity.createdAt),
-          ipAddress: activity.ipAddress,
-        }));
+        return response.activities.map((activity: unknown) => {
+          const activityData = activity as Record<string, unknown>;
+          return {
+            id: activityData.id as string,
+            type: activityData.type as ActivityType,
+            description: activityData.description as string,
+            metadata: activityData.metadata as Record<string, unknown>,
+            createdAt: new Date(activityData.createdAt as string),
+            ipAddress: activityData.ipAddress as string,
+          };
+        });
       })
     );
 

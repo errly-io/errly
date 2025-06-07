@@ -81,7 +81,8 @@ export class PrismaProjectsRepository {
         platform: data.platform,
         framework: data.framework || null,
         description: data.description || null,
-        settings: data.settings || {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any || {},
       },
       include: {
         spaces: {
@@ -104,7 +105,10 @@ export class PrismaProjectsRepository {
       data: {
         ...data,
         updated_at: new Date(),
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        settings: data.settings as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       include: {
         spaces: {
           select: {
