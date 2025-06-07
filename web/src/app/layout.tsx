@@ -1,6 +1,7 @@
 import '@mantine/core/styles.css';
 import React from 'react';
 import { AppProviders } from './providers';
+import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 
 // Force dynamic rendering to avoid Html import issues
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <PerformanceMonitor />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

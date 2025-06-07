@@ -124,6 +124,7 @@ make build-all                 # Build for all platforms
 - **Schema Verification**: Database synchronization checks
 - **Type Generation**: Automated TypeScript/Go type updates
 - **CI/CD Integration**: GitHub Actions automation
+- **Performance Testing**: Core Web Vitals monitoring
 
 🔧 **[Go CLI Testing Documentation](docs/GO_CLI_TESTING.md)**
 

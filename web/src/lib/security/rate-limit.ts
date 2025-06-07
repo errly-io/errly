@@ -22,7 +22,8 @@ const store: RateLimitStore = {};
 setInterval(() => {
   const now = Date.now();
   Object.keys(store).forEach(key => {
-    if (store[key].resetTime < now) {
+    const entry = store[key];
+    if (entry && entry.resetTime < now) {
       delete store[key];
     }
   });
@@ -35,7 +36,8 @@ export function createRateLimit(config: RateLimitConfig) {
     const now = Date.now();
 
     // Initialize or get existing record
-    if (!store[key] || store[key].resetTime < now) {
+    const existingEntry = store[key];
+    if (!existingEntry || existingEntry.resetTime < now) {
       store[key] = {
         count: 0,
         resetTime: now + config.windowMs
@@ -43,11 +45,12 @@ export function createRateLimit(config: RateLimitConfig) {
     }
 
     // Increment counter
-    store[key].count++;
+    const currentEntry = store[key]!; // We just set it above
+    currentEntry.count++;
 
     // Check if limit exceeded
-    if (store[key].count > config.maxRequests) {
-      const resetTime = Math.ceil((store[key].resetTime - now) / 1000);
+    if (currentEntry.count > config.maxRequests) {
+      const resetTime = Math.ceil((currentEntry.resetTime - now) / 1000);
 
       return NextResponse.json(
         {
@@ -59,7 +62,7 @@ export function createRateLimit(config: RateLimitConfig) {
           headers: {
             'X-RateLimit-Limit': config.maxRequests.toString(),
             'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': store[key].resetTime.toString(),
+            'X-RateLimit-Reset': currentEntry.resetTime.toString(),
             'Retry-After': resetTime.toString()
           }
         }
@@ -67,13 +70,13 @@ export function createRateLimit(config: RateLimitConfig) {
     }
 
     // Add rate limit headers to response
-    const remaining = config.maxRequests - store[key].count;
+    const remaining = config.maxRequests - currentEntry.count;
 
     return NextResponse.next({
       headers: {
         'X-RateLimit-Limit': config.maxRequests.toString(),
         'X-RateLimit-Remaining': remaining.toString(),
-        'X-RateLimit-Reset': store[key].resetTime.toString()
+        'X-RateLimit-Reset': currentEntry.resetTime.toString()
       }
     });
   };
@@ -86,7 +89,8 @@ function getClientIP(request: NextRequest): string {
   const cfConnectingIP = request.headers.get('cf-connecting-ip');
 
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    const firstIP = forwarded.split(',')[0];
+    return firstIP ? firstIP.trim() : 'unknown';
   }
 
   if (realIP) {

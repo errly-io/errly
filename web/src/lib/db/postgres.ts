@@ -66,7 +66,8 @@ class PostgresConnection {
   }
 }
 
-// Export singleton instance
+// Export class and singleton instance
+export { PostgresConnection };
 export const postgres = PostgresConnection.getInstance();
 
 // Utility functions

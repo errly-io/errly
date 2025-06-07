@@ -53,7 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: user.id,
             name: user.name,
             email: user.email,
-            image: user.avatar_url ?? undefined,
+            image: user.avatar_url ?? null,
           };
         } catch (error) {
           console.error("Authentication error:", error);

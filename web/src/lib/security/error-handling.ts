@@ -25,13 +25,30 @@ export class SecureError extends Data.TaggedError('SecureError')<{
     context?: Record<string, unknown>;
     originalError?: Error;
   }) {
-    super({
+    const baseParams: {
+      message: string;
+      code: string;
+      timestamp: number;
+      context?: Record<string, unknown>;
+      originalError?: Error;
+    } = {
       message: sanitizeErrorMessage(params.message),
       code: params.code,
       timestamp: Date.now(),
-      context: sanitizeContext(params.context),
-      originalError: params.originalError,
-    });
+    };
+
+    if (params.context) {
+      const sanitizedContext = sanitizeContext(params.context);
+      if (sanitizedContext) {
+        baseParams.context = sanitizedContext;
+      }
+    }
+
+    if (params.originalError) {
+      baseParams.originalError = params.originalError;
+    }
+
+    super(baseParams);
   }
 
   // Safe serialization for logging/transmission
@@ -95,8 +112,8 @@ export class NetworkError extends SecureError {
     super({
       message,
       code: 'NETWORK_ERROR',
-      context: { statusCode },
-      originalError,
+      ...(statusCode !== undefined && { context: { statusCode } }),
+      ...(originalError && { originalError }),
     });
   }
 }
@@ -107,7 +124,7 @@ export class DatabaseError extends SecureError {
       message: `Database operation failed: ${operation}`,
       code: 'DATABASE_ERROR',
       context: { operation },
-      originalError,
+      ...(originalError && { originalError }),
     });
   }
 }

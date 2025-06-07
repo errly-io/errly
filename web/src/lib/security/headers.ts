@@ -101,12 +101,17 @@ export function validateRequestHeaders(request: NextRequest): {
     }
   }
 
-  // Check for suspicious headers
+  // Check for suspicious headers (including CVE-2025-29927 mitigation)
   const suspiciousHeaders = [
-    'x-forwarded-host',
     'x-original-url',
     'x-rewrite-url',
+    'x-middleware-subrequest', // CVE-2025-29927 mitigation
   ];
+
+  // In production, also block x-forwarded-host for additional security
+  if (process.env.NODE_ENV === 'production') {
+    suspiciousHeaders.push('x-forwarded-host');
+  }
 
   for (const header of suspiciousHeaders) {
     if (request.headers.has(header)) {

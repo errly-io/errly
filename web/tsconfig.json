@@ -3,6 +3,11 @@
   "compilerOptions": {
     "jsx": "preserve",
     "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
     "noEmit": true,
     "emitDeclarationOnly": false,
     "esModuleInterop": true,

@@ -127,7 +127,8 @@ class ClickHouseConnection {
   }
 }
 
-// Export singleton instance
+// Export class and singleton instance
+export { ClickHouseConnection };
 export const clickhouse = ClickHouseConnection.getInstance();
 
 // Utility functions
@@ -135,7 +136,10 @@ export async function queryOne<T>(
   query: string,
   params?: Record<string, unknown>
 ): Promise<T | null> {
-  const result = await clickhouse.query<T>({ query, query_params: params });
+  const result = await clickhouse.query<T>({
+    query,
+    ...(params && { query_params: params })
+  });
   return result[0] ?? null;
 }
 
@@ -143,7 +147,10 @@ export async function queryMany<T>(
   query: string,
   params?: Record<string, unknown>
 ): Promise<T[]> {
-  return clickhouse.query<T>({ query, query_params: params });
+  return clickhouse.query<T>({
+    query,
+    ...(params && { query_params: params })
+  });
 }
 
 export async function queryCount(
@@ -152,7 +159,7 @@ export async function queryCount(
 ): Promise<number> {
   const result = await clickhouse.query<{ count: number }>({
     query,
-    query_params: params
+    ...(params && { query_params: params })
   });
   return result[0]?.count ?? 0;
 }

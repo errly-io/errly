@@ -118,11 +118,19 @@ export function validateObject<T extends Record<string, unknown>>(
     }
   }
 
-  return {
-    isValid: errors.length === 0,
-    value: errors.length === 0 ? (validatedObj as T) : undefined,
-    errors
-  };
+  if (errors.length === 0) {
+    return {
+      isValid: true,
+      value: validatedObj as T,
+      errors: []
+    };
+  } else {
+    return {
+      isValid: false,
+      value: undefined as any,
+      errors
+    };
+  }
 }
 
 /**
@@ -242,11 +250,19 @@ export function validateRequest<
     }
   }
 
-  return {
-    isValid: errors.length === 0,
-    value: errors.length === 0 ? validated : undefined,
-    errors
-  };
+  if (errors.length === 0) {
+    return {
+      isValid: true,
+      value: validated,
+      errors: []
+    };
+  } else {
+    return {
+      isValid: false,
+      value: undefined as any,
+      errors
+    };
+  }
 }
 
 /**
@@ -309,11 +325,19 @@ export function validateNestedObject(
     }
   }
 
-  return {
-    isValid: errors.length === 0,
-    value: errors.length === 0 ? validated : undefined,
-    errors
-  };
+  if (errors.length === 0) {
+    return {
+      isValid: true,
+      value: validated,
+      errors: []
+    };
+  } else {
+    return {
+      isValid: false,
+      value: undefined as any,
+      errors
+    };
+  }
 }
 
 /**
@@ -372,11 +396,19 @@ export function validateArray<T>(
     }
   }
 
-  return {
-    isValid: errors.length === 0,
-    value: errors.length === 0 ? validatedItems : undefined,
-    errors
-  };
+  if (errors.length === 0) {
+    return {
+      isValid: true,
+      value: validatedItems,
+      errors: []
+    };
+  } else {
+    return {
+      isValid: false,
+      value: undefined as any,
+      errors
+    };
+  }
 }
 
 /**
@@ -408,9 +440,17 @@ export function combineValidationResults<T>(
     }
   }
 
-  return {
-    isValid: errors.length === 0,
-    value: errors.length === 0 ? values : undefined,
-    errors
-  };
+  if (errors.length === 0) {
+    return {
+      isValid: true,
+      value: values,
+      errors: []
+    };
+  } else {
+    return {
+      isValid: false,
+      value: undefined as any,
+      errors
+    };
+  }
 }

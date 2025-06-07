@@ -6,7 +6,7 @@ import { getSpaceBySlug } from '../../../lib/data/spaces';
 import { IssuesTable } from './components/IssuesTable';
 import { IssuesFilters } from './components/IssuesFilters';
 import { IssuesStats } from './components/IssuesStats';
-import { IssuesSearchParams, IssueStatusFilter, IssueLevelFilter, toProjectWithSettings } from '../../../lib/types/database';
+import { IssuesSearchParams, IssuesQueryParams, IssueStatusFilter, IssueLevelFilter, toProjectWithSettings } from '../../../lib/types/database';
 
 interface Props {
   params: Promise<{ space: string }>;
@@ -48,12 +48,13 @@ export default async function IssuesPage({ params, searchParams }: Props) {
   const projects = await getProjects(spaceData.id);
 
   // Parameters for issues request
-  const issuesParams = {
-    project_id: resolvedSearchParams.project,
+  const levelFilter = parseLevelFilter(resolvedSearchParams.level);
+  const issuesParams: IssuesQueryParams = {
+    ...(resolvedSearchParams.project && { project_id: resolvedSearchParams.project }),
     status: parseStatusFilter(resolvedSearchParams.status),
-    environment: resolvedSearchParams.environment,
-    level: parseLevelFilter(resolvedSearchParams.level),
-    search: resolvedSearchParams.search,
+    ...(resolvedSearchParams.environment && { environment: resolvedSearchParams.environment }),
+    ...(levelFilter && { level: levelFilter }),
+    ...(resolvedSearchParams.search && { search: resolvedSearchParams.search }),
     page: parseInt(resolvedSearchParams.page || '1'),
     limit: 10,
     sort_by: 'last_seen' as const,
@@ -61,9 +62,10 @@ export default async function IssuesPage({ params, searchParams }: Props) {
   };
 
   // Get issues and statistics in parallel
+  const firstProject = projects.length > 0 ? projects[0] : undefined;
   const [issuesResponse, issuesStats] = await Promise.all([
     getIssues(issuesParams),
-    getIssuesStats(projects.length > 0 ? projects[0].id : '')
+    getIssuesStats(firstProject?.id ?? '')
   ]);
 
   return (

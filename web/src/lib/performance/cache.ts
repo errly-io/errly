@@ -82,8 +82,14 @@ class AdvancedCache<T = JsonValue> {
 
   constructor(name: string, config?: Partial<CacheConfig>) {
     this.name = name;
-    this.config = { ...DEFAULT_CONFIGS.api, ...config };
-    
+    this.config = {
+      ttl: config?.ttl ?? 5 * 60 * 1000, // 5 minutes default
+      maxSize: config?.maxSize ?? 100,
+      strategy: config?.strategy ?? 'lru',
+      persistent: config?.persistent ?? false,
+      compress: config?.compress ?? true,
+    };
+
     // Load from persistent storage if enabled
     if (this.config.persistent) {
       this.loadFromStorage();

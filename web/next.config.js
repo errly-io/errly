@@ -16,8 +16,8 @@ const nextConfig = {
     forceSwcTransforms: true,
     optimizeCss: true,
     optimizePackageImports: ['@mantine/core', '@mantine/hooks', '@mantine/notifications'],
-    serverComponentsExternalPackages: ['@prisma/client'],
   },
+  serverExternalPackages: ['@prisma/client'],
   trailingSlash: false,
   skipTrailingSlashRedirect: true,
   // Disable static optimization to avoid Html import issues

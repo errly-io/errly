@@ -228,7 +228,10 @@ class BundleAnalyzer {
   private static extractChunkName(url: string): string {
     const parts = url.split('/');
     const filename = parts[parts.length - 1];
-    return filename.split('.')[0];
+    if (!filename) {
+      return 'unknown';
+    }
+    return filename.split('.')[0] || 'unknown';
   }
 
   /**

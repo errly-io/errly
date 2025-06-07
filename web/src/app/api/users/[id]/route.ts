@@ -120,8 +120,8 @@ export async function PATCH(
       where: { id: paramValidation.data.id },
       data: {
         name: sanitizedData.name,
-        avatar_url: sanitizedData.avatar,
-        settings: sanitizedData.preferences,
+        ...(sanitizedData.avatar !== undefined && { avatar_url: sanitizedData.avatar }),
+        ...(sanitizedData.preferences !== undefined && { settings: sanitizedData.preferences }),
         updated_at: new Date()
       },
       select: {

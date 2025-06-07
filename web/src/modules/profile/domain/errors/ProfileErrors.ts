@@ -24,11 +24,16 @@ export class ValidationError extends Data.TaggedError("ValidationError")<{
   readonly value?: unknown;
 }> {
   static create(field: string, message: string, value?: unknown) {
-    return new ValidationError({
+    const params: { field: string; message: string; value?: unknown } = {
       field,
       message,
-      value
-    });
+    };
+
+    if (value !== undefined) {
+      params.value = value;
+    }
+
+    return new ValidationError(params);
   }
 }
 
@@ -50,11 +55,19 @@ export class NetworkError extends Data.TaggedError("NetworkError")<{
   readonly cause?: unknown;
 }> {
   static create(message: string, statusCode?: number, cause?: unknown) {
-    return new NetworkError({
+    const params: { message: string; statusCode?: number; cause?: unknown } = {
       message,
-      statusCode,
-      cause
-    });
+    };
+
+    if (statusCode !== undefined) {
+      params.statusCode = statusCode;
+    }
+
+    if (cause !== undefined) {
+      params.cause = cause;
+    }
+
+    return new NetworkError(params);
   }
 }
 
@@ -65,12 +78,23 @@ export class FileUploadError extends Data.TaggedError("FileUploadError")<{
   readonly cause?: unknown;
 }> {
   static create(message: string, fileName?: string, fileSize?: number, cause?: unknown) {
-    return new FileUploadError({
+    const params: { message: string; fileName?: string; fileSize?: number; cause?: unknown } = {
       message,
-      fileName,
-      fileSize,
-      cause
-    });
+    };
+
+    if (fileName !== undefined) {
+      params.fileName = fileName;
+    }
+
+    if (fileSize !== undefined) {
+      params.fileSize = fileSize;
+    }
+
+    if (cause !== undefined) {
+      params.cause = cause;
+    }
+
+    return new FileUploadError(params);
   }
 }
 
@@ -79,10 +103,15 @@ export class RateLimitError extends Data.TaggedError("RateLimitError")<{
   readonly retryAfter?: number;
 }> {
   static create(retryAfter?: number) {
-    return new RateLimitError({
+    const params: { message: string; retryAfter?: number } = {
       message: "Rate limit exceeded",
-      retryAfter
-    });
+    };
+
+    if (retryAfter !== undefined) {
+      params.retryAfter = retryAfter;
+    }
+
+    return new RateLimitError(params);
   }
 }
 

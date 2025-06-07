@@ -11,17 +11,23 @@ export const isTest = process.env.NODE_ENV === 'test';
 
 // Security headers configuration
 export const SECURITY_HEADERS = {
-  // Content Security Policy
+  // Content Security Policy (Enhanced for 2025 security standards)
   CSP: {
     'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-    'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'https:'],
-    'font-src': ["'self'"],
-    'connect-src': ["'self'"],
+    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'"],
+    'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+    'img-src': ["'self'", 'data:', 'https:', 'blob:'],
+    'font-src': ["'self'", 'https://fonts.gstatic.com'],
+    'connect-src': ["'self'", 'https://api.github.com', 'wss:', 'ws:'],
     'frame-ancestors': ["'none'"],
     'base-uri': ["'self'"],
     'form-action': ["'self'"],
+    'object-src': ["'none'"],
+    'media-src': ["'self'"],
+    'worker-src': ["'self'", 'blob:'],
+    'child-src': ["'self'"],
+    'manifest-src': ["'self'"],
+    'upgrade-insecure-requests': [],
   },
   
   // HTTP Strict Transport Security

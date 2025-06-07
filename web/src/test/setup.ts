@@ -97,8 +97,8 @@ beforeAll(() => {
           // Simple mock hash for testing
           const view = new Uint8Array(data);
           let hash = 0;
-          for (let i = 0; i < view.length; i++) {
-            hash = ((hash << 5) - hash + view[i]) & 0xffffffff;
+          for (const byte of view) {
+            hash = ((hash << 5) - hash + byte) & 0xffffffff;
           }
           return new ArrayBuffer(32); // Mock SHA-256 result
         },
@@ -286,19 +286,24 @@ export const securityTestUtils = {
    * Create a large dataset for performance testing
    */
   createLargeDataset: (size: number) => {
-    return Array.from({ length: size }, (_, i) => ({
-      id: i,
-      name: `Item ${i}`,
-      sensitive: `secret${i}`,
-      data: `data${i}`,
-      nested: {
-        level1: {
-          level2: {
-            secret: `nested_secret${i}`,
+    return Array.from({ length: size }, (_, i) => {
+      if (i === undefined) {
+        throw new Error('Index is undefined');
+      }
+      return {
+        id: i,
+        name: `Item ${i}`,
+        sensitive: `secret${i}`,
+        data: `data${i}`,
+        nested: {
+          level1: {
+            level2: {
+              secret: `nested_secret${i}`,
+            },
           },
         },
-      },
-    }));
+      };
+    });
   },
 };
 

@@ -97,7 +97,7 @@ export function BasicAppShell({ children }: { readonly children: React.ReactNode
                 >
                   <Group gap="sm">
                     <Avatar
-                      src={session.user?.image}
+                      src={session.user?.image || null}
                       size={32}
                       radius="xl"
                     >

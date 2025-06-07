@@ -134,7 +134,7 @@ export function ProfileAvatar({
         <Stack align="center" gap="md">
           <div style={{ position: 'relative' }}>
             <Avatar
-              src={profile.avatar}
+              src={profile.avatar || null}
               alt={profile.name}
               size={size}
               radius="50%"

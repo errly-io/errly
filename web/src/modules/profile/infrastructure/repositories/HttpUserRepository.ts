@@ -1,5 +1,5 @@
 import { Effect, pipe, Schema } from "effect";
-import { User, UpdateProfileData, UserSchema } from "../../domain/entities/User";
+import { User, UpdateProfileData, UserSchema, UserRole, UserPreferences } from "../../domain/entities/User";
 import { UserRepository, UserSession, UserActivity, ActivityType } from "../../domain/repositories/UserRepository";
 import {
   ProfileErrors,
@@ -23,7 +23,7 @@ export class HttpUserRepository implements UserRepository {
             'Content-Type': 'application/json',
           },
         }),
-        catch: (error) => NetworkError.create("Failed to fetch user", undefined, error)
+        catch: (error) => NetworkError.create("Failed to fetch user", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.flatMap((data) => this.parseUser(data)),
@@ -45,7 +45,7 @@ export class HttpUserRepository implements UserRepository {
           },
           body: JSON.stringify(data),
         }),
-        catch: (error) => NetworkError.create("Failed to update profile", undefined, error)
+        catch: (error) => NetworkError.create("Failed to update profile", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.flatMap((data) => this.parseUser(data))
@@ -81,7 +81,7 @@ export class HttpUserRepository implements UserRepository {
         try: () => fetch(`${this.baseUrl}/users/${id}/avatar`, {
           method: 'DELETE',
         }),
-        catch: (error) => NetworkError.create("Failed to delete avatar", undefined, error)
+        catch: (error) => NetworkError.create("Failed to delete avatar", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map(() => void 0)
@@ -100,7 +100,7 @@ export class HttpUserRepository implements UserRepository {
             newPassword,
           }),
         }),
-        catch: (error) => NetworkError.create("Failed to change password", undefined, error)
+        catch: (error) => NetworkError.create("Failed to change password", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map(() => void 0)
@@ -115,7 +115,7 @@ export class HttpUserRepository implements UserRepository {
             'Content-Type': 'application/json',
           },
         }),
-        catch: (error) => NetworkError.create("Failed to fetch user sessions", undefined, error)
+        catch: (error) => NetworkError.create("Failed to fetch user sessions", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map((data: unknown) => {
@@ -144,7 +144,7 @@ export class HttpUserRepository implements UserRepository {
         try: () => fetch(`${this.baseUrl}/users/${id}/sessions/${sessionId}`, {
           method: 'DELETE',
         }),
-        catch: (error) => NetworkError.create("Failed to revoke session", undefined, error)
+        catch: (error) => NetworkError.create("Failed to revoke session", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map(() => void 0)
@@ -166,7 +166,7 @@ export class HttpUserRepository implements UserRepository {
             },
           });
         },
-        catch: (error) => NetworkError.create("Failed to fetch user activity", undefined, error)
+        catch: (error) => NetworkError.create("Failed to fetch user activity", 500, error)
       }),
       Effect.flatMap((response) => this.handleResponse(response)),
       Effect.map((data: unknown) => {
@@ -219,16 +219,43 @@ export class HttpUserRepository implements UserRepository {
         try: () => Schema.decodeUnknownSync(UserSchema)(data),
         catch: (error) => ValidationError.create("user", "Invalid user data", error)
       }),
-      Effect.map((userData) => User.create({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        avatar: userData.avatar,
-        role: userData.role,
-        createdAt: userData.createdAt,
-        updatedAt: userData.updatedAt,
-        isEmailVerified: userData.isEmailVerified,
-        preferences: userData.preferences
-      }))
+      Effect.map((userData) => {
+        const userParams: {
+          id: string;
+          email: string;
+          name: string;
+          avatar?: string;
+          role?: UserRole;
+          createdAt?: Date;
+          updatedAt?: Date;
+          isEmailVerified?: boolean;
+          preferences?: UserPreferences;
+        } = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+        };
+
+        if (userData.avatar !== undefined) {
+          userParams.avatar = userData.avatar;
+        }
+        if (userData.role !== undefined) {
+          userParams.role = userData.role;
+        }
+        if (userData.createdAt !== undefined) {
+          userParams.createdAt = userData.createdAt;
+        }
+        if (userData.updatedAt !== undefined) {
+          userParams.updatedAt = userData.updatedAt;
+        }
+        if (userData.isEmailVerified !== undefined) {
+          userParams.isEmailVerified = userData.isEmailVerified;
+        }
+        if (userData.preferences !== undefined) {
+          userParams.preferences = userData.preferences;
+        }
+
+        return User.create(userParams);
+      })
     );
 }

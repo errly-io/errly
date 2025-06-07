@@ -80,7 +80,7 @@ export function useThrottle<T extends (...args: never[]) => unknown>(
 
   return useCallback((...args: Parameters<T>) => {
     const now = Date.now();
-    
+
     if (now - lastRun.current >= delay) {
       lastRun.current = now;
       return callback(...args);
@@ -88,11 +88,13 @@ export function useThrottle<T extends (...args: never[]) => unknown>(
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       timeoutRef.current = setTimeout(() => {
         lastRun.current = Date.now();
         callback(...args);
       }, delay - (now - lastRun.current));
+
+      return undefined as ReturnType<T>;
     }
   }, [callback, delay]) as T;
 }
@@ -277,9 +279,12 @@ export function useIntersectionObserver(
     const element = ref.current;
     if (!element) return;
 
-    const observer = new IntersectionObserver(([entry]) => {
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+
       setIsIntersecting(entry.isIntersecting);
-      
+
       // Record visibility metric
       performanceMonitor.recordMetric({
         name: 'element-visibility',
@@ -287,7 +292,7 @@ export function useIntersectionObserver(
         unit: 'percentage',
         timestamp: Date.now(),
         category: 'render',
-        tags: { 
+        tags: {
           visible: entry.isIntersecting.toString(),
           ratio: entry.intersectionRatio.toString(),
         },

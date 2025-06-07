@@ -106,7 +106,7 @@ export async function createApiKey(
     const keyRequest: CreateApiKeyRequest = {
       name: name.trim(),
       scopes,
-      expires_at: expiresAt
+      ...(expiresAt && { expires_at: expiresAt })
     };
 
     // Save to database

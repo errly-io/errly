@@ -301,7 +301,7 @@ export const OptimizedErrorList = memo<ErrorListProps>(({
       <ErrorRow
         key={error.id}
         error={error}
-        onClick={onErrorClick}
+        {...(onErrorClick && { onClick: onErrorClick })}
         onResolve={handleResolve}
       />
     );
