@@ -113,3 +113,5 @@ Icon?
 # Backup files
 *.bak
 *.backup
+
+server/api

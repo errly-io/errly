@@ -36,6 +36,14 @@ func (s *IngestService) ProcessEvents(ctx context.Context, projectID uuid.UUID, 
 	fingerprintMap := make(map[string][]*models.ErrorEvent)
 
 	for _, ingestEvent := range ingestEvents {
+		// Initialize nil maps to avoid panics
+		if ingestEvent.Tags == nil {
+			ingestEvent.Tags = make(map[string]string)
+		}
+		if ingestEvent.Extra == nil {
+			ingestEvent.Extra = make(map[string]interface{})
+		}
+
 		// Generate fingerprint for grouping
 		fingerprint := s.eventsRepo.GenerateFingerprint(&ingestEvent)
 
@@ -63,16 +71,10 @@ func (s *IngestService) ProcessEvents(ctx context.Context, projectID uuid.UUID, 
 
 		// Use provided timestamp if available
 		if ingestEvent.Timestamp != nil {
-			errorEvent.Timestamp = *ingestEvent.Timestamp
+			errorEvent.Timestamp = ingestEvent.Timestamp.Time
 		}
 
-		// Initialize maps if nil
-		if errorEvent.Tags == nil {
-			errorEvent.Tags = make(map[string]string)
-		}
-		if errorEvent.Extra == nil {
-			errorEvent.Extra = make(map[string]interface{})
-		}
+
 
 		errorEvents = append(errorEvents, errorEvent)
 		fingerprintMap[fingerprint] = append(fingerprintMap[fingerprint], errorEvent)

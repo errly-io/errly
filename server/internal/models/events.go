@@ -84,7 +84,7 @@ type IngestEvent struct {
 	Tags           map[string]string      `json:"tags"`
 	Extra          map[string]interface{} `json:"extra"`
 	Level          ErrorLevel             `json:"level"`
-	Timestamp      *time.Time             `json:"timestamp,omitempty"`
+	Timestamp      *FlexibleTime          `json:"timestamp,omitempty"`
 }
 
 // ProjectStats represents aggregated statistics for a project

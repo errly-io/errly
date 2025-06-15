@@ -83,6 +83,11 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	// Debug middleware for development
+	if cfg.IsDevelopment() {
+		router.Use(middleware.DebugMiddleware())
+	}
+
 	// CORS configuration
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:3000", "https://errly.dev"}
@@ -90,6 +95,12 @@ func main() {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"}
 	corsConfig.ExposeHeaders = []string{"X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"}
 	corsConfig.AllowCredentials = true
+
+	// Allow any origin in development
+	if cfg.IsDevelopment() {
+		corsConfig.AllowAllOrigins = true
+	}
+
 	router.Use(cors.New(corsConfig))
 
 	// Health check endpoint (no auth required)
